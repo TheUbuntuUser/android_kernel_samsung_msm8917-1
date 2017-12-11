@@ -903,8 +903,8 @@ static void netpm_rwnd_max_adjustment(struct tcp_sock *tp)
 void tcp_rcv_space_adjust(struct sock *sk)
 {
 	struct tcp_sock *tp = tcp_sk(sk);
+	u32 copied;
 	int time;
-	int copied;
 
 	time = tcp_time_stamp - tp->rcvq_space.time;
 	if (time < (tp->rcv_rtt_est.rtt >> 3) || tp->rcv_rtt_est.rtt == 0)
@@ -943,12 +943,13 @@ void tcp_rcv_space_adjust(struct sock *sk)
 
 	if (sysctl_tcp_moderate_rcvbuf &&
 	    !(sk->sk_userlocks & SOCK_RCVBUF_LOCK)) {
-		int rcvwin, rcvmem, rcvbuf;
+		int rcvmem, rcvbuf;
+		u64 rcvwin;
 
 		/* minimal window to cope with packet losses, assuming
 		 * steady state. Add some cushion because of small variations.
 		 */
-		rcvwin = (copied << 1) + 16 * tp->advmss;
+		rcvwin = ((u64)copied << 1) + 16 * tp->advmss;
 
 		/* If rate increased by 25%,
 		 *	assume slow start, rcvwin = 3 * copied
@@ -967,22 +968,9 @@ void tcp_rcv_space_adjust(struct sock *sk)
 		rcvmem = SKB_TRUESIZE(tp->advmss + MAX_TCP_HEADER);
 		while (tcp_win_from_space(rcvmem) < tp->advmss)
 			rcvmem += 128;
-#ifdef CONFIG_NETPM
-		if (netpm(tp)) {
-			netpm_rwnd_max_adjustment(tp);
-			rcvbuf = min(rcvwin / tp->advmss * rcvmem, netpm_rmem_max(tp));
-			if (!tp->netpm_rbuf_flag && rcvbuf >= sysctl_tcp_rmem[1]) {
-				pr_info("<netpm> %s rtt_min_ms = %d\n", __func__,
-					jiffies_to_msecs(tp->netpm_rtt_min >> 3));
-				tp->netpm_rbuf_flag = 1;
-			}
-		} else {
-#endif
-			rcvbuf = min(rcvwin / tp->advmss * rcvmem, sysctl_tcp_rmem[2]);
-#ifdef CONFIG_NETPM
-		}
-		netpm_debug("%s final rcvbuf %d\n", __func__, rcvbuf);
-#endif
+
+		do_div(rcvwin, tp->advmss);
+		rcvbuf = min_t(u64, rcvwin * rcvmem, sysctl_tcp_rmem[2]);
 		if (rcvbuf > sk->sk_rcvbuf) {
 			sk->sk_rcvbuf = rcvbuf;
 
