@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 export ARCH=arm
 export PATH=$(pwd)/../PLATFORM/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9/bin:$PATH
 
