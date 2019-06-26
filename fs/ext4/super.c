@@ -2594,6 +2594,34 @@ static int parse_strtoull(const char *buf,
 	return ret;
 }
 
+static ssize_t sec_defrag_stat_show(struct ext4_attr *a,
+				struct ext4_sb_info *sbi, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE,
+		"\"%s\":\"%u\",\"%s\":\"%u\",\"%s\":\"%u\",\"%s\":\"%u\",\"%s\":\"%u\",\"%s\":\"%u\"\n",
+		"BESTEXT", 	sbi->s_sec_part_best_extents,
+		"CUREXT", 	sbi->s_sec_part_current_extents,
+		"DEFSCORE", sbi->s_sec_part_score,
+		"DEFWRITE", sbi->s_sec_defrag_writes_kb,
+		"NUMAPP", 	sbi->s_sec_num_apps,
+		"CAPAPP", 	sbi->s_sec_capacity_apps_kb);
+}
+
+static ssize_t sec_defrag_stat_store(struct ext4_attr *a,
+					  struct ext4_sb_info *sbi,
+					  const char *buf, size_t count)
+{
+	if (buf[0] == 'c' || buf[0] == 'C') {
+		sbi->s_sec_part_best_extents = 0;
+		sbi->s_sec_part_current_extents = 0;
+		sbi->s_sec_part_score = 0;
+		sbi->s_sec_defrag_writes_kb = 0;
+		sbi->s_sec_num_apps = 0;
+		sbi->s_sec_capacity_apps_kb = 0;
+	}
+	return count;
+}
+
 static ssize_t sec_fs_stat_show(struct ext4_attr *a,
 				struct ext4_sb_info *sbi, char *buf)
 {
@@ -2812,6 +2840,14 @@ static struct ext4_attr ext4_attr_##_name = {			\
 	},							\
 }
 
+EXT4_RW_ATTR_SBI_UI(sec_part_best_extents, s_sec_part_best_extents);
+EXT4_RW_ATTR_SBI_UI(sec_part_current_extents, s_sec_part_current_extents);
+EXT4_RW_ATTR_SBI_UI(sec_part_score, s_sec_part_score);
+EXT4_RW_ATTR_SBI_UI(sec_defrag_writes_kb, s_sec_defrag_writes_kb);
+EXT4_RW_ATTR_SBI_UI(sec_num_apps, s_sec_num_apps);
+EXT4_RW_ATTR_SBI_UI(sec_capacity_apps_kb, s_sec_capacity_apps_kb);
+
+EXT4_RW_ATTR(sec_defrag_stat);
 EXT4_RO_ATTR(sec_fs_stat);
 EXT4_RO_ATTR(sec_fs_freefrag);
 EXT4_RO_ATTR(delayed_allocation_blocks);
@@ -2842,6 +2878,13 @@ EXT4_RO_ATTR_ES_UI(first_error_time, s_first_error_time);
 EXT4_RO_ATTR_ES_UI(last_error_time, s_last_error_time);
 
 static struct attribute *ext4_attrs[] = {
+	ATTR_LIST(sec_part_best_extents),
+	ATTR_LIST(sec_part_current_extents),
+	ATTR_LIST(sec_part_score),
+	ATTR_LIST(sec_defrag_writes_kb),
+	ATTR_LIST(sec_num_apps),
+	ATTR_LIST(sec_capacity_apps_kb),
+	ATTR_LIST(sec_defrag_stat),
 	ATTR_LIST(sec_fs_stat),
 	ATTR_LIST(sec_fs_freefrag),
 	ATTR_LIST(delayed_allocation_blocks),
@@ -3267,6 +3310,9 @@ static ext4_group_t ext4_has_uninit_itable(struct super_block *sb)
 	ext4_group_t group, ngroups = EXT4_SB(sb)->s_groups_count;
 	struct ext4_group_desc *gdp = NULL;
 
+    if (!ext4_has_group_desc_csum(sb))
+       return ngroups;
+ 		   	
 	for (group = 0; group < ngroups; group++) {
 		gdp = ext4_get_group_desc(sb, group, NULL);
 		if (!gdp)
@@ -3945,6 +3991,11 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
 	} else {
 		sbi->s_inode_size = le16_to_cpu(es->s_inode_size);
 		sbi->s_first_ino = le32_to_cpu(es->s_first_ino);
+		if (sbi->s_first_ino < EXT4_GOOD_OLD_FIRST_INO) {
+			ext4_msg(sb, KERN_ERR, "invalid first ino: %u",
+				 sbi->s_first_ino);
+			goto failed_mount;
+		}
 		if ((sbi->s_inode_size < EXT4_GOOD_OLD_INODE_SIZE) ||
 		    (!is_power_of_2(sbi->s_inode_size)) ||
 		    (sbi->s_inode_size > blocksize)) {
@@ -4317,7 +4368,8 @@ no_journal:
 			goto failed_mount_wq;
 	}
 
-	if (le32_to_cpu(es->s_sec_magic) == EXT4_SEC_DATA_MAGIC) {
+	if (strcmp(es->s_volume_name, "data") == 0 ||
+			le32_to_cpu(es->s_sec_magic) == EXT4_SEC_DATA_MAGIC) {
 		sbi->s_r_inodes_count = EXT4_DEF_RESERVE_INODE;
 		ext4_msg(sb, KERN_INFO, "Reserve inodes (%d/%u)",
 			EXT4_DEF_RESERVE_INODE,
@@ -4389,7 +4441,8 @@ no_journal:
 	}
 
 #define ANDROID_M_R_BLOCKS_COUNT	(1280)
-	if (le32_to_cpu(sbi->s_es->s_sec_magic) == EXT4_SEC_DATA_MAGIC)
+	if (strcmp(es->s_volume_name, "data") == 0 ||
+			le32_to_cpu(sbi->s_es->s_sec_magic) == EXT4_SEC_DATA_MAGIC)
 		atomic64_set(&sbi->s_r_blocks_count, ext4_r_blocks_count(es) ? :
 				ANDROID_M_R_BLOCKS_COUNT);
 	if (atomic64_read(&sbi->s_r_blocks_count))
@@ -4527,8 +4580,10 @@ cantfind_ext4:
 	/* for debugging, sangwoo2.lee */
 	/* If you wanna use the flag 'MS_SILENT', call */
 	/* 'print_bh' function within below 'if'. */
-	printk(KERN_ERR "printing data of superblock-bh\n");
-	print_bh(sb, bh, 0, EXT4_BLOCK_SIZE(sb));
+	if (!silent) {
+		printk(KERN_ERR "printing data of superblock-bh\n");
+		print_bh(sb, bh, 0, EXT4_BLOCK_SIZE(sb));
+	}
 	/* for debugging */
 
 	if (!silent)

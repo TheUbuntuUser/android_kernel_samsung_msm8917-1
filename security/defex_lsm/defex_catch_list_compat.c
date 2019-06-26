@@ -6,18 +6,16 @@
  * as published by the Free Software Foundation.
 */
 
-#include <asm/unistd.h>
+#include <asm/unistd32.h>
 #include <linux/errno.h>
 #include <linux/types.h>
 #include "include/defex_catch_list.h"
 
-#ifndef __NR_compat_syscalls
 #ifdef __NR_seccomp
 #define __NR_compat_syscalls		(__NR_seccomp + 1)
 #else
 #define __NR_compat_syscalls		400
 #endif /* __NR_seccomp */
-#endif
 
 #define DEFEX_CATCH_COUNT	__NR_compat_syscalls
 const int defex_nr_syscalls_compat = DEFEX_CATCH_COUNT;

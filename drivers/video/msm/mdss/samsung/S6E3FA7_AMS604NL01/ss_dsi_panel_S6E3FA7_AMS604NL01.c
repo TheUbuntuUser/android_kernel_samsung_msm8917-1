@@ -150,6 +150,7 @@ static int mdss_panel_on_post(struct mdss_dsi_ctrl_pdata *ctrl)
 
 	pr_info("%s %d\n", __func__, ndx);
 
+	self_mask_img_write(ctrl);
 	ss_self_mask_on(ctrl, 1);
 
 	return true;
@@ -1279,6 +1280,7 @@ static void dsi_update_mdnie_data(void)
 	mdnie_data.DSI0_RGB_SENSOR_MDNIE_1 = DSI0_RGB_SENSOR_MDNIE_1;
 	mdnie_data.DSI0_RGB_SENSOR_MDNIE_2 = DSI0_RGB_SENSOR_MDNIE_2;
 	mdnie_data.DSI0_RGB_SENSOR_MDNIE_3 = DSI0_RGB_SENSOR_MDNIE_3;
+	mdnie_data.DSI0_TRANS_DIMMING_MDNIE = DSI0_RGB_SENSOR_MDNIE_3;
 
 	mdnie_data.DSI0_BYPASS_MDNIE = DSI0_BYPASS_MDNIE;
 	mdnie_data.DSI0_NEGATIVE_MDNIE = DSI0_NEGATIVE_MDNIE;
@@ -1312,6 +1314,7 @@ static void dsi_update_mdnie_data(void)
 	mdnie_data.dsi0_rgb_sensor_mdnie_2_size = DSI0_RGB_SENSOR_MDNIE_2_SIZE;
 	mdnie_data.dsi0_rgb_sensor_mdnie_3_size = DSI0_RGB_SENSOR_MDNIE_3_SIZE;
 //	mdnie_data.dsi0_rgb_sensor_mdnie_index = MDNIE_RGB_SENSOR_INDEX;
+	mdnie_data.dsi0_trans_dimming_data_index = MDNIE_TRANS_DIMMING_DATA_INDEX;
 	mdnie_data.dsi0_adjust_ldu_table = adjust_ldu_data;
 	mdnie_data.dsi1_adjust_ldu_table = NULL;
 	mdnie_data.dsi0_max_adjust_ldu = 6;
@@ -1330,6 +1333,12 @@ static void dsi_update_mdnie_data(void)
 	mdnie_data.dsi1_white_default_g = 0xff;
 	mdnie_data.dsi1_white_default_b = 0xff;
 	mdnie_data.dsi1_white_rgb_enabled = 0;
+	mdnie_data.dsi0_white_swa_r = -11;
+	mdnie_data.dsi0_white_swa_g = -13;
+	mdnie_data.dsi0_white_swa_b = 0;
+	mdnie_data.dsi1_white_swa_r = -11;
+	mdnie_data.dsi1_white_swa_g = -13;
+	mdnie_data.dsi1_white_swa_b = 0;
 	mdnie_data.dsi0_scr_step_index = MDNIE_STEP1_INDEX;
 	mdnie_data.dsi1_scr_step_index = MDNIE_STEP1_INDEX;
 	mdnie_data.light_notification_tune_value_dsi0 = light_notification_tune_value_dsi0;
@@ -1507,7 +1516,7 @@ static void mdss_panel_init(struct samsung_display_driver_data *vdd)
 
 	/* mdnie */
 	vdd->support_mdnie_lite = true;
-	vdd->support_mdnie_trans_dimming = false;
+	vdd->support_mdnie_trans_dimming = true;
 	/* for mdnie tuning */
 	vdd->mdnie_tune_size[0] = sizeof(DSI0_BYPASS_MDNIE_1);
 	vdd->mdnie_tune_size[1] = sizeof(DSI0_BYPASS_MDNIE_2);
@@ -1576,3 +1585,4 @@ static int __init samsung_panel_init(void)
 	return 0;
 }
 early_initcall(samsung_panel_init);
+

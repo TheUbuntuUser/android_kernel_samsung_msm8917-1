@@ -677,11 +677,10 @@ limProcessAuthFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo, tpPESession pse
                  * invalid.
                  */
                 if (isConnected && pStaDs->PrevAuthSeqno != currSeqNo
-
 #ifdef WLAN_FEATURE_11W
                     && !pStaDs->rmfEnabled
 #endif
-                                          )
+                   )
                 {
                     limLog(pMac, LOGE,
                             FL("STA is already connected but received auth frame"
@@ -1858,6 +1857,16 @@ tSirRetStatus limProcessAuthFrameNoSession(tpAniSirGlobal pMac, tANI_U8 *pBd, vo
     pHdr = WDA_GET_RX_MAC_HEADER(pBd);
     pBody = WDA_GET_RX_MPDU_DATA(pBd);
     frameLen = WDA_GET_RX_PAYLOAD_LEN(pBd);
+
+    /*
+     * since, roaming is not supported in sta + mon scc, ignore
+     * pre-auth when capture on monitor mode is started
+     */
+    if (vos_check_monitor_state())
+    {
+        limLog(pMac, LOG1, FL("Ignore pre-auth frame in monitor mode"));
+        return eSIR_FAILURE;
+    }
 
     limLog(pMac, LOG1, FL("Auth Frame Received: BSSID " MAC_ADDRESS_STR
     " (RSSI %d)"),MAC_ADDR_ARRAY(pHdr->bssId),

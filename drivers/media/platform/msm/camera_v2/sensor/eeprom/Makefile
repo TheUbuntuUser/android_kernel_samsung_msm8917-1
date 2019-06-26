@@ -5,6 +5,6 @@ ccflags-y += -Idrivers/media/platform/msm/camera_v2/sensor/cci
 obj-$(CONFIG_MSM_EEPROM) += msm_eeprom.o
 obj-$(CONFIG_MSM_OTP) += msm_otp.o
 obj-$(CONFIG_MSM_FRONT_OTP) += msm_otp.o
-obj-$(CONFIG_GET_FRONT_MODULE_ID) += msm_otp.o
+obj-$(CONFIG_GET_FRONT_MODULE_ID_OTP) += msm_otp.o
 obj-$(CONFIG_S5K5E3YX) += msm_otp.o
 obj-$(CONFIG_S5K5E9YX) += msm_otp.o

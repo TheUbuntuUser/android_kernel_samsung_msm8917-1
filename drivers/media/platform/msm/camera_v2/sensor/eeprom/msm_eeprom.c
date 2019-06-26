@@ -595,6 +595,211 @@ static int msm_eeprom_power_up(struct msm_eeprom_ctrl_t *e_ctrl,
 	return rc;
 }
 
+
+void msm_eeprom_sysfs_config(struct msm_eeprom_ctrl_t *e_ctrl)
+{
+
+	if (!e_ctrl)
+		return;
+#if defined( CONFIG_GET_REAR_MODULE_ID )
+	if( e_ctrl->subdev_id == 0 ) {
+		memcpy(rear_module_id, &(e_ctrl->cal_data.mapdata[FROM_FRONT_MODULE_ID_ADDR]), FROM_MODULE_ID_SIZE);
+		rear_module_id[FROM_MODULE_ID_SIZE] = '\0';
+  
+		CDBG("%s : %d rear_module_id = %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\n", __func__, e_ctrl->subdev_id,
+			rear_module_id[0], rear_module_id[1], rear_module_id[2], rear_module_id[3], rear_module_id[4],
+			rear_module_id[5], rear_module_id[6], rear_module_id[7], rear_module_id[8], rear_module_id[9]);
+	}
+#endif  
+	
+#if defined( CONFIG_GET_FRONT_MODULE_ID )
+	if( e_ctrl->subdev_id == 1 ) {
+		memcpy(front_module_id, &(e_ctrl->cal_data.mapdata[FROM_FRONT_MODULE_ID_ADDR]), FROM_MODULE_ID_SIZE);
+		front_module_id[FROM_MODULE_ID_SIZE] = '\0';
+
+		CDBG("%s : %d front_module_id = %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\n", __func__, e_ctrl->subdev_id,
+			front_module_id[0], front_module_id[1], front_module_id[2], front_module_id[3], front_module_id[4],
+			front_module_id[5], front_module_id[6], front_module_id[7], front_module_id[8], front_module_id[9]);
+	}
+#endif
+
+	/*rear af cal*/
+#if defined(FROM_REAR_AF_CAL_MACRO_ADDR)
+	if( e_ctrl->subdev_id == 0 )
+		memcpy(&rear_af_cal[0], &e_ctrl->cal_data.mapdata[FROM_REAR_AF_CAL_MACRO_ADDR], 4);
+#endif
+#if defined(FROM_REAR_AF_CAL_PAN_ADDR)
+	if( e_ctrl->subdev_id == 0 )
+		memcpy(&rear_af_cal[9], &e_ctrl->cal_data.mapdata[FROM_REAR_AF_CAL_PAN_ADDR], 4);
+#endif
+
+#if defined(CONFIG_SAMSUNG_MULTI_CAMERA)
+#if defined(CONFIG_CAMERA_DUAL_REAR)
+	if( e_ctrl->subdev_id == 0 ) {
+		memcpy(rear_dual_cal, &e_ctrl->cal_data.mapdata[FROM_REAR_DUAL_CAL_ADDR], FROM_REAR_DUAL_CAL_SIZE);
+		rear_dual_cal[FROM_REAR_DUAL_CAL_SIZE] = '\0';
+		CDBG("%s : %d rear dual cal = %s", __func__, e_ctrl->subdev_id, rear_dual_cal);
+	}
+	if( e_ctrl->subdev_id == 0 ) {
+		/* rear2 tilt */
+		memcpy(&rear2_dual_tilt_x, &e_ctrl->cal_data.mapdata[FROM_REAR2_DUAL_TILT_X], 4);
+		memcpy(&rear2_dual_tilt_y, &e_ctrl->cal_data.mapdata[FROM_REAR2_DUAL_TILT_Y], 4);
+		memcpy(&rear2_dual_tilt_z, &e_ctrl->cal_data.mapdata[FROM_REAR2_DUAL_TILT_Z], 4);
+		memcpy(&rear2_dual_tilt_sx, &e_ctrl->cal_data.mapdata[FROM_REAR2_DUAL_TILT_SX], 4);
+		memcpy(&rear2_dual_tilt_sy, &e_ctrl->cal_data.mapdata[FROM_REAR2_DUAL_TILT_SY], 4);
+		memcpy(&rear2_dual_tilt_range, &e_ctrl->cal_data.mapdata[FROM_REAR2_DUAL_TILT_RANGE], 4);
+		memcpy(&rear2_dual_tilt_max_err, &e_ctrl->cal_data.mapdata[FROM_REAR2_DUAL_TILT_MAX_ERR], 4);
+		memcpy(&rear2_dual_tilt_avg_err, &e_ctrl->cal_data.mapdata[FROM_REAR2_DUAL_TILT_AVG_ERR], 4);
+		memcpy(&rear2_dual_tilt_dll_ver, &e_ctrl->cal_data.mapdata[FROM_REAR2_DUAL_TILT_DLL_VERSION], 4);
+		CDBG("%s : %d rear dual tilt x = %d, y = %d, z = %d, sx = %d, sy = %d, range = %d, max_err = %d, avg_err = %d, dll_ver = %d\n",
+			__func__, e_ctrl->subdev_id, rear2_dual_tilt_x, rear2_dual_tilt_y, rear2_dual_tilt_z, rear2_dual_tilt_sx, rear2_dual_tilt_sy,
+			rear2_dual_tilt_range, rear2_dual_tilt_max_err, rear2_dual_tilt_avg_err, rear2_dual_tilt_dll_ver);
+	}
+
+         /*rear af cal*/
+#if defined(FROM_REAR_AF_CAL_MACRO_ADDR)
+        if( e_ctrl->subdev_id == 0 )
+	        memcpy(&rear_af_cal[0], &e_ctrl->cal_data.mapdata[FROM_REAR_AF_CAL_MACRO_ADDR], 4);
+#endif
+#if defined(FROM_REAR_AF_CAL_D10_ADDR)
+        if( e_ctrl->subdev_id == 0 )
+	        memcpy(&rear_af_cal[1], &e_ctrl->cal_data.mapdata[FROM_REAR_AF_CAL_D10_ADDR], 4);
+#endif
+#if defined(FROM_REAR_AF_CAL_D20_ADDR)
+        if( e_ctrl->subdev_id == 0 )
+	        memcpy(&rear_af_cal[2], &e_ctrl->cal_data.mapdata[FROM_REAR_AF_CAL_D20_ADDR], 4);
+#endif
+#if defined(FROM_REAR_AF_CAL_D30_ADDR)
+        if( e_ctrl->subdev_id == 0 )
+	        memcpy(&rear_af_cal[3], &e_ctrl->cal_data.mapdata[FROM_REAR_AF_CAL_D30_ADDR], 4);
+#endif
+#if defined(FROM_REAR_AF_CAL_D40_ADDR)
+        if( e_ctrl->subdev_id == 0 )
+	        memcpy(&rear_af_cal[4], &e_ctrl->cal_data.mapdata[FROM_REAR_AF_CAL_D40_ADDR], 4);
+#endif
+#if defined(FROM_REAR_AF_CAL_D50_ADDR)
+        if( e_ctrl->subdev_id == 0 )
+	        memcpy(&rear_af_cal[5], &e_ctrl->cal_data.mapdata[FROM_REAR_AF_CAL_D50_ADDR], 4);
+#endif
+#if defined(FROM_REAR_AF_CAL_D60_ADDR)
+        if( e_ctrl->subdev_id == 0 )
+	        memcpy(&rear_af_cal[6], &e_ctrl->cal_data.mapdata[FROM_REAR_AF_CAL_D60_ADDR], 4);
+#endif
+#if defined(FROM_REAR_AF_CAL_D70_ADDR)
+        if( e_ctrl->subdev_id == 0 )
+                memcpy(&rear_af_cal[7], &e_ctrl->cal_data.mapdata[FROM_REAR_AF_CAL_D70_ADDR], 4);
+#endif
+#if defined(FROM_REAR_AF_CAL_D80_ADDR)
+        if( e_ctrl->subdev_id == 0 )
+	        memcpy(&rear_af_cal[8], &e_ctrl->cal_data.mapdata[FROM_REAR_AF_CAL_D80_ADDR], 4);
+#endif
+#if defined(FROM_REAR_AF_CAL_PAN_ADDR)
+        if( e_ctrl->subdev_id == 0 )
+	        memcpy(&rear_af_cal[9], &e_ctrl->cal_data.mapdata[FROM_REAR_AF_CAL_PAN_ADDR], 4);
+#endif
+
+#ifdef	REAR2_HAVE_AF_CAL_DATA
+	/*rear2 af cal*/
+#if defined(FROM_REAR2_AF_CAL_MACRO_ADDR)
+        if( e_ctrl->subdev_id == 0 )
+	        memcpy(&rear2_af_cal[0], &e_ctrl->cal_data.mapdata[FROM_REAR2_AF_CAL_MACRO_ADDR], 4);
+#endif
+#if defined(FROM_REAR2_AF_CAL_D10_ADDR)
+        if( e_ctrl->subdev_id == 0 )
+                memcpy(&rear2_af_cal[1], &e_ctrl->cal_data.mapdata[FROM_REAR2_AF_CAL_D10_ADDR], 4);
+#endif
+#if defined(FROM_REAR2_AF_CAL_D20_ADDR)
+        if( e_ctrl->subdev_id == 0 )
+	        memcpy(&rear2_af_cal[2], &e_ctrl->cal_data.mapdata[FROM_REAR2_AF_CAL_D20_ADDR], 4);
+#endif
+#if defined(FROM_REAR2_AF_CAL_D30_ADDR)
+        if( e_ctrl->subdev_id == 0 )
+	        memcpy(&rear2_af_cal[3], &e_ctrl->cal_data.mapdata[FROM_REAR2_AF_CAL_D30_ADDR], 4);
+#endif
+#if defined(FROM_REAR2_AF_CAL_D40_ADDR)
+        if( e_ctrl->subdev_id == 0 )
+		memcpy(&rear2_af_cal[4], &e_ctrl->cal_data.mapdata[FROM_REAR2_AF_CAL_D40_ADDR], 4);
+#endif
+#if defined(FROM_REAR2_AF_CAL_D50_ADDR)
+        if( e_ctrl->subdev_id == 0 )
+		memcpy(&rear2_af_cal[5], &e_ctrl->cal_data.mapdata[FROM_REAR2_AF_CAL_D50_ADDR], 4);
+#endif
+#if defined(FROM_REAR2_AF_CAL_D60_ADDR)
+        if( e_ctrl->subdev_id == 0 )
+                memcpy(&rear2_af_cal[6], &e_ctrl->cal_data.mapdata[FROM_REAR2_AF_CAL_D60_ADDR], 4);
+#endif
+#if defined(FROM_REAR2_AF_CAL_D70_ADDR)        
+        if( e_ctrl->subdev_id == 0 )
+	        memcpy(&rear2_af_cal[7], &e_ctrl->cal_data.mapdata[FROM_REAR2_AF_CAL_D70_ADDR], 4);
+#endif
+#if defined(FROM_REAR2_AF_CAL_D80_ADDR)
+        if( e_ctrl->subdev_id == 0 )
+	        memcpy(&rear2_af_cal[8], &e_ctrl->cal_data.mapdata[FROM_REAR2_AF_CAL_D80_ADDR], 4);
+#endif
+#if defined(FROM_REAR2_AF_CAL_PAN_ADDR)
+        if( e_ctrl->subdev_id == 0 )
+	        memcpy(&rear2_af_cal[9], &e_ctrl->cal_data.mapdata[FROM_REAR2_AF_CAL_PAN_ADDR], 4);
+#endif	
+#endif
+#endif
+#if defined(CONFIG_CAMERA_DUAL_FRONT)
+	if( e_ctrl->subdev_id == 1 ) {
+		memcpy(front_dual_cal, &e_ctrl->cal_data.mapdata[FROM_FRONT_DUAL_CAL_ADDR], FROM_FRONT_DUAL_CAL_SIZE);
+		front_dual_cal[FROM_FRONT_DUAL_CAL_SIZE] = '\0';
+		CDBG("%s : %d front dual cal = %s", __func__, e_ctrl->subdev_id, front_dual_cal);
+	}
+	if( e_ctrl->subdev_id == 1 ) {
+		/* front2 tilt */
+		memcpy(&front2_dual_tilt_x, &e_ctrl->cal_data.mapdata[FROM_FRONT2_DUAL_TILT_X], 4);
+		memcpy(&front2_dual_tilt_y, &e_ctrl->cal_data.mapdata[FROM_FRONT2_DUAL_TILT_Y], 4);
+		memcpy(&front2_dual_tilt_z, &e_ctrl->cal_data.mapdata[FROM_FRONT2_DUAL_TILT_Z], 4);
+		memcpy(&front2_dual_tilt_sx, &e_ctrl->cal_data.mapdata[FROM_FRONT2_DUAL_TILT_SX], 4);
+		memcpy(&front2_dual_tilt_sy, &e_ctrl->cal_data.mapdata[FROM_FRONT2_DUAL_TILT_SY], 4);
+		memcpy(&front2_dual_tilt_range, &e_ctrl->cal_data.mapdata[FROM_FRONT2_DUAL_TILT_RANGE], 4);
+		memcpy(&front2_dual_tilt_max_err, &e_ctrl->cal_data.mapdata[FROM_FRONT2_DUAL_TILT_MAX_ERR], 4);
+		memcpy(&front2_dual_tilt_avg_err, &e_ctrl->cal_data.mapdata[FROM_FRONT2_DUAL_TILT_AVG_ERR], 4);
+		memcpy(&front2_dual_tilt_dll_ver, &e_ctrl->cal_data.mapdata[FROM_FRONT2_DUAL_TILT_DLL_VERSION], 4);
+		CDBG("%s : %d fornt dual tilt x = %d, y = %d, z = %d, sx = %d, sy = %d, range = %d, max_err = %d, avg_err = %d, dll_ver = %d\n",
+			__func__, e_ctrl->subdev_id, front2_dual_tilt_x, front2_dual_tilt_y, front2_dual_tilt_z, front2_dual_tilt_sx, front2_dual_tilt_sy,
+			front2_dual_tilt_range, front2_dual_tilt_max_err, front2_dual_tilt_avg_err, front2_dual_tilt_dll_ver);
+	}
+#endif
+#endif
+
+	/* rear mtf exif */
+	if( e_ctrl->subdev_id == 0 ) {
+		/* rear mtf exif */
+		memcpy(rear_mtf_exif, &e_ctrl->cal_data.mapdata[FROM_REAR_MTF_ADDR], FROM_MTF_SIZE);
+		rear_mtf_exif[FROM_MTF_SIZE] = '\0';
+		CDBG("%s : %d rear mtf exif = %s", __func__, e_ctrl->subdev_id, rear_mtf_exif);
+	}
+	/* front mtf exif */
+	if( e_ctrl->subdev_id == 1 ) {
+		memcpy(front_mtf_exif, &e_ctrl->cal_data.mapdata[FROM_FRONT_MTF_ADDR], FROM_MTF_SIZE);
+		front_mtf_exif[FROM_MTF_SIZE] = '\0';
+		CDBG("%s : %d front mtf exif = %s", __func__, e_ctrl->subdev_id, front_mtf_exif);
+	}
+#if defined(CONFIG_SAMSUNG_MULTI_CAMERA)
+#if defined(CONFIG_CAMERA_DUAL_FRONT)
+	/* front2 mtf exif */
+	if( e_ctrl->subdev_id == 1 ) {
+		memcpy(front2_mtf_exif, &e_ctrl->cal_data.mapdata[FROM_FRONT2_MTF_ADDR], FROM_MTF_SIZE);
+		front2_mtf_exif[FROM_MTF_SIZE] = '\0';
+		CDBG("%s : %d front2 mtf exif = %s", __func__, e_ctrl->subdev_id, front2_mtf_exif);
+	}
+#endif
+#if defined(CONFIG_CAMERA_DUAL_REAR)
+	/* rear2 mtf exif */
+	if( e_ctrl->subdev_id == 0 ) {
+		memcpy(rear2_mtf_exif, &e_ctrl->cal_data.mapdata[FROM_REAR2_MTF_ADDR], FROM_MTF_SIZE);
+		rear2_mtf_exif[FROM_MTF_SIZE] = '\0';
+		CDBG("%s : %d rear2 mtf exif = %s", __func__, e_ctrl->subdev_id, rear2_mtf_exif);
+	}
+#endif
+#endif
+
+}
+
 /**
   * msm_eeprom_power_up - Do power up, parse and power down
   * @e_ctrl: ctrl structure
@@ -831,6 +1036,7 @@ static int msm_eeprom_config(struct msm_eeprom_ctrl_t *e_ctrl,
 		CDBG ("is_supported after %X\n",e_ctrl->is_supported);
         e_ctrl->is_supported = (e_ctrl->is_supported << 1) | 1;
 		cdata->is_supported = e_ctrl->is_supported;
+		eeprom_config_read_cal_data(e_ctrl, cdata);
 		break;
 	default:
 		break;
@@ -2058,6 +2264,7 @@ static int msm_eeprom_config32(struct msm_eeprom_ctrl_t *e_ctrl,
 		CDBG ("is_supported after %X\n",e_ctrl->is_supported);
         e_ctrl->is_supported = (e_ctrl->is_supported << 1) | 1;
 		cdata->is_supported = e_ctrl->is_supported;
+		eeprom_config_read_cal_data32(e_ctrl, argp);
 		break;
 	default:
 		break;
@@ -2184,6 +2391,13 @@ static int msm_eeprom_platform_probe(struct platform_device *pdev)
 	}
 	e_ctrl->subdev_id = pdev->id;
 
+	if (g_ectrl[e_ctrl->subdev_id]) {
+		pr_err("eeprom id already present!\n");
+		goto board_free;
+	}
+
+	g_ectrl[e_ctrl->subdev_id] = NULL;
+
 	rc = of_property_read_u32(of_node, "qcom,cci-master",
 		&e_ctrl->cci_master);
 	CDBG("qcom,cci-master %d, rc %d\n", e_ctrl->cci_master, rc);
@@ -2249,9 +2463,11 @@ static int msm_eeprom_platform_probe(struct platform_device *pdev)
 			pr_err("%s read_eeprom_memory failed\n", __func__);
 			goto power_down;
 		}
-		for (j = 0; j < e_ctrl->cal_data.num_data; j++)
-			CDBG_V("memory_data[%x] = 0x%X\n", j,
+		for (j = 0; j < e_ctrl->cal_data.num_data; j++) {
+			if (e_ctrl->cal_data.mapdata[j] != 0xff)
+				CDBG("memory_data[%x] = 0x%X\n", j,
 				e_ctrl->cal_data.mapdata[j]);
+		}
 
         /*rear af cal*/  //CCI EEPROM PROBE
 #if defined(FROM_REAR_AF_CAL_MACRO_ADDR)
@@ -2265,6 +2481,8 @@ static int msm_eeprom_platform_probe(struct platform_device *pdev)
 
 		e_ctrl->is_supported |= msm_eeprom_match_crc(&e_ctrl->cal_data,  e_ctrl->subdev_id);
 
+		msm_eeprom_sysfs_config(e_ctrl);
+
 		rc = msm_camera_power_down(power_info,
 			e_ctrl->eeprom_device_type, &e_ctrl->i2c_client);
 		if (rc) {
@@ -2273,6 +2491,12 @@ static int msm_eeprom_platform_probe(struct platform_device *pdev)
 		}
 	} else
 		e_ctrl->is_supported = 1;
+	if (0 > of_property_read_u32(of_node, "qcom,sensor-position",
+				&temp)) {
+		pr_err("%s:%d Fail position, Default sensor position\n", __func__, __LINE__);
+		temp = 0;
+	}
+	CDBG("%s qcom,sensor-position %d\n", __func__,temp);
 
 	v4l2_subdev_init(&e_ctrl->msm_sd.sd,
 		e_ctrl->eeprom_v4l2_subdev_ops);
@@ -2283,6 +2507,7 @@ static int msm_eeprom_platform_probe(struct platform_device *pdev)
 	snprintf(e_ctrl->msm_sd.sd.name,
 		ARRAY_SIZE(e_ctrl->msm_sd.sd.name), "msm_eeprom");
 	media_entity_init(&e_ctrl->msm_sd.sd.entity, 0, NULL, 0);
+	e_ctrl->msm_sd.sd.entity.flags = temp;
 	e_ctrl->msm_sd.sd.entity.type = MEDIA_ENT_T_V4L2_SUBDEV;
 	e_ctrl->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_EEPROM;
 	msm_sd_register(&e_ctrl->msm_sd);
@@ -2295,6 +2520,7 @@ static int msm_eeprom_platform_probe(struct platform_device *pdev)
 #endif
 
 	e_ctrl->is_supported = (e_ctrl->is_supported << 1) | 1;
+	g_ectrl[e_ctrl->subdev_id] = e_ctrl;
 	CDBG("%s X\n", __func__);
 	return rc;
 

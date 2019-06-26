@@ -162,6 +162,7 @@ static int muic_earjackkey_intent(int state)
 	return NOTIFY_OK;
 }
 #endif
+
 #if defined (CONFIG_MUIC_DOCK_NOTIFIER)
 static int muic_dock_attach_notify(int type, const char *name)
 {
@@ -178,7 +179,8 @@ static int muic_dock_detach_notify(void)
 
 	return NOTIFY_OK;
 }
-#endif
+#endif /* CONFIG_MUIC_DOCK_NOTIFIER */
+
 /* Notice:
   * Define your own wake-up Noti. function to use 619K
   * as a different purpose as it is for wake-up by default.

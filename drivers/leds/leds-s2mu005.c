@@ -43,7 +43,7 @@ struct s2mu005_led_data * g_led_datas[S2MU005_LED_MAX];
 int ta_attached = 0;
 int sdp_attached = 0;
 
-#if defined(CONFIG_SEC_J6PRIMELTE_PROJECT) || defined(CONFIG_SEC_J4PRIMELTE_PROJECT)
+#if defined(CONFIG_SEC_J6PRIMELTE_PROJECT) || defined(CONFIG_SEC_J4PRIMELTE_PROJECT)|| defined(CONFIG_SEC_J4CORELTE_PROJECT)
 extern int factory_mode;
 #endif
 
@@ -317,7 +317,7 @@ static void led_set(struct s2mu005_led_data *led_data)
 
 		/* torch mode off sequence */
 		if (ta_attached) {
-#if defined(CONFIG_SEC_J6PRIMELTE_PROJECT) || defined(CONFIG_SEC_J4PRIMELTE_PROJECT)
+#if defined(CONFIG_SEC_J6PRIMELTE_PROJECT) || defined(CONFIG_SEC_J4PRIMELTE_PROJECT)|| defined(CONFIG_SEC_J4CORELTE_PROJECT)
 			if (!factory_mode) {
 				ret = s2mu005_update_reg(led_data->i2c,
 					S2MU005_REG_FLED_CTRL1, 0x00, 0x80);
@@ -503,7 +503,7 @@ static int s2mu005_led_setup(struct s2mu005_led_data *led_data)
 	if (ret < 0)
 		goto out;
 
-#if defined(CONFIG_SEC_J6PRIMELTE_PROJECT) || defined(CONFIG_SEC_J4PRIMELTE_PROJECT)
+#if defined(CONFIG_SEC_J6PRIMELTE_PROJECT) || defined(CONFIG_SEC_J4PRIMELTE_PROJECT)|| defined(CONFIG_SEC_J4CORELTE_PROJECT)
 	/* factory mode additional setting */
 	if (factory_mode) {
                	/* In UART testing, Power will come from external power source instead of battery
@@ -717,7 +717,7 @@ static void ta_attached_torch_led_on_off_conf(int value)
 			pr_err("%s : CHGIN_ENGH = 1 fail\n", __func__);
 	}
 
-#if defined(CONFIG_SEC_J6PRIMELTE_PROJECT) || defined(CONFIG_SEC_J4PRIMELTE_PROJECT)
+#if defined(CONFIG_SEC_J6PRIMELTE_PROJECT) || defined(CONFIG_SEC_J4PRIMELTE_PROJECT)|| defined(CONFIG_SEC_J4CORELTE_PROJECT)
 	if (!value && !factory_mode) { // torch off
 		ret = s2mu005_update_reg(g_led_datas[S2MU005_FLASH_LED]->i2c,
 			S2MU005_REG_FLED_CTRL1, 0x00, 0x80);
@@ -880,7 +880,7 @@ static ssize_t rear_flash_store(struct device *dev,
 			assistive_light = true;
 			break;
 		/* 5-level brightness for torch */
-#if defined(CONFIG_SEC_J6PRIMELTE_PROJECT) || defined(CONFIG_SEC_J4PRIMELTE_PROJECT)
+#if defined(CONFIG_SEC_J6PRIMELTE_PROJECT) || defined(CONFIG_SEC_J4PRIMELTE_PROJECT) || defined(CONFIG_SEC_J4CORELTE_PROJECT)
 		case 1001:
                         brightness = S2MU005_TORCH_OUT_I_25MA;
                         assistive_light = true;
@@ -994,8 +994,12 @@ static ssize_t front_flash_store(struct device *dev,
 		assistive_light = true;
 	} else if (value == 100) {
 		/* Factory mode Turn on Torch */
+#if defined(CONFIG_SEC_J4CORELTE_PROJECT)
+		brightness = 5;
+#else
 		brightness = led_data->torch_brightness + 4;// 150mA ; jtt to be set with wanted  front brightness for factory test
-                assistive_light = true;
+#endif
+        assistive_light = true;
 	} else {
 		pr_err("[FLED]%s , Invalid value:%d\n", __func__, value);
 		goto err;

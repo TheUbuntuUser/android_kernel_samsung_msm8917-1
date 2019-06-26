@@ -118,7 +118,7 @@ static irqreturn_t pn547_dev_irq_handler(int irq, void *dev_id)
 	struct pn547_dev *pn547_dev = dev_id;
 
 	if (!gpio_get_value(pn547_dev->irq_gpio)) {
-#if NFC_DEBUG
+#if 1 /* NFC_DEBUG */
 		NFC_LOG_ERR("irq_gpio = %d\n",
 			gpio_get_value(pn547_dev->irq_gpio));
 #endif
@@ -306,6 +306,7 @@ static int pn547_dev_open(struct inode *inode, struct file *filp)
 	filp->private_data = pn547_dev;
 	NFC_LOG_INFO("imajor:%d, iminor:%d (%d)\n", imajor(inode), iminor(inode),
 			pn547_dev->i2c_probe);
+	nfc_logger_set_max_count(-1);
 
 	return 0;
 }
@@ -982,8 +983,8 @@ static void release_ese_lock(enum p61_access_state  p61_current_state)
 {
 	NFC_LOG_INFO("enter p61_current_state = (0x%x)\n",
 			p61_current_state);
-	complete(&pn547_dev->ese_comp);
 	p61_trans_acc_on = 0;
+	complete(&pn547_dev->ese_comp);
 	NFC_LOG_INFO("p61_trans_acc_on =%d exit\n", p61_trans_acc_on);
 }
 

@@ -61,6 +61,9 @@
 // #define STK_IRS
 //#define STK_CHK_REG
 
+#define WAIT_TIME_PS		30000 	// 24.96 ms + 0.192 ms (PS + Wait)
+#define WAIT_TIME_ALS_PS	105000 	// 1.56 ms + 0.192 ms + 100 ms (ALS + PS + Wait)
+
 /* Define Register Map */
 #define STK_STATE_REG           0x00
 #define STK_PSCTRL_REG          0x01
@@ -696,7 +699,7 @@ static int32_t stk3328_init_all_reg(struct stk3328_data *ps_data)
 		pr_err("[SENSOR] %s: write i2c error\n", __func__);
 		return ret;
 	}
-	reg = 0x32;
+	reg = 0x21;
 	ret = stk3328_i2c_smbus_write_byte_data(ps_data->client, STK_REG_INTELLI_WAIT_PS_REG, reg);
 	if (ret < 0)
 	{
@@ -711,6 +714,14 @@ static int32_t stk3328_init_all_reg(struct stk3328_data *ps_data)
 		pr_err("[SENSOR] %s: write i2c error STK_BGIR_REG\n", __func__);
 		return ret;
 	}
+
+	ret = stk3328_i2c_smbus_write_byte_data(ps_data->client, 0xA8, 0x0);
+	if (ret < 0)
+	{
+		pr_err("[SENSOR] %s: write i2c error STK_BGIR_REG\n", __func__);
+		return ret;
+	}
+
 	reg = 0x54;
 	ret = stk3328_i2c_smbus_write_byte_data(ps_data->client, STK_CI_REG, reg);
 	if (ret < 0)
@@ -855,8 +866,7 @@ static int32_t stk3328_get_state(struct stk3328_data *ps_data)
 
 
 
-
-//----
+/*
 static void stk_ps_bgir_update(struct stk3328_data *ps_data);
 static void stk_ps_bgir_judgement(struct stk3328_data *ps_data);
 static void stk_ps_bgir_task(struct stk3328_data *ps_data, int nf);
@@ -882,6 +892,8 @@ static void stk_ps_bgir_judgement(struct stk3328_data *ps_data)
 	int ret;
 	ret = stk3328_i2c_smbus_read_byte_data(ps_data->client, 0xA5);
 
+	pr_info("stk_ps_bgir_judgement 0xA5 = %d\n", ret);
+
 	if (ret == 0x28)
 	{
 		uint8_t bgir_data[2];
@@ -891,7 +903,7 @@ static void stk_ps_bgir_judgement(struct stk3328_data *ps_data)
 		pr_info("[SENSOR] %s: 0xA5 = %d, 0xB0 = %d 0xB1 = %d ps_code_last = %d\n",
 			__func__, ret, bgir_data[0], bgir_data[1], ps_data->ps_code_last);
 
-		if ((bgir_data[0] < 100) && (bgir_data[1] < 100) && (ps_data->ps_code_last == 0))
+		if ((bgir_data[0] < 10) && (bgir_data[1] < 10) && (ps_data->ps_code_last == 0))
 		{
 			pr_info("[SENSOR] %s: condition satisfied\n", __func__);
 
@@ -915,12 +927,12 @@ static void stk_ps_bgir_task(struct stk3328_data *ps_data, int nf)
 		stk_ps_bgir_judgement(ps_data);
 	}
 }
+*/
 
-//----
 static void stk_ps_report(struct stk3328_data *ps_data, int nf)
 {
 	ps_data->ps_distance_last = nf;
-	stk_ps_bgir_task(ps_data, nf);
+	//stk_ps_bgir_task(ps_data, nf);
 
 	pr_info("[SENSOR] %s, ps_distance_last = %d, nf = %d\n",
 				__func__, ps_data->ps_distance_last, nf);
@@ -953,10 +965,10 @@ static void stk3328_check_first_far_event(struct stk3328_data *ps_data)
 {
 	uint32_t adc = stk3328_get_ps_reading(ps_data);
 
-	pr_info("[Sensor] first adc = %d\n", adc);
+	pr_info("[SENSOR] %s, first adc = %d\n", __func__, adc);
 
 	if (adc < ps_data->ps_thd_h) {
-		pr_info("[Sensor] first far event reported\n");
+		pr_info("[SENSOR] %s, first far event reported\n", __func__);
 		input_report_abs(ps_data->ps_input_dev, ABS_DISTANCE, 1);
 		input_sync(ps_data->ps_input_dev);
 	}
@@ -995,7 +1007,7 @@ static int32_t stk3328_enable_ps(struct stk3328_data *ps_data, uint8_t enable, u
 		ret = stk_prox_open_calibration(ps_data);
 		if (ret < 0)
 			pr_err("[SENSOR] proximity open calibration failed (%d)\n", ret);
-	
+
 		stk3328_set_ps_thd_h(ps_data, ps_data->ps_thd_h);
 		stk3328_set_ps_thd_l(ps_data, ps_data->ps_thd_l);
 	}
@@ -1006,9 +1018,19 @@ static int32_t stk3328_enable_ps(struct stk3328_data *ps_data, uint8_t enable, u
 	w_state_reg &= ~(STK_STATE_EN_PS_MASK | STK_STATE_EN_WAIT_MASK);
 	if (enable)
 	{
-		w_state_reg |= STK_STATE_EN_PS_MASK;
-		if (!(ps_data->als_enabled))
-			w_state_reg |= STK_STATE_EN_WAIT_MASK;
+		w_state_reg |= STK_STATE_EN_PS_MASK | STK_STATE_EN_WAIT_MASK;
+		if (ps_data->als_enabled)
+		{
+			ret = stk3328_i2c_smbus_write_byte_data(ps_data->client, STK_WAIT_REG, 0); //1.56ms
+			if (ret < 0)
+				return ret;
+		}
+		else
+		{
+			ret = stk3328_i2c_smbus_write_byte_data(ps_data->client, STK_WAIT_REG, ps_data->wait_reg);
+			if (ret < 0)
+				return ret;
+		}
 	}
 	ret = stk3328_set_state(ps_data, w_state_reg);
 	if (ret < 0)
@@ -1033,7 +1055,10 @@ static int32_t stk3328_enable_ps(struct stk3328_data *ps_data, uint8_t enable, u
 #endif
 
 		// Allow chip to update ADC value
-		usleep_range(40000, 40000);
+		if (ps_data->als_enabled)
+			usleep_range(WAIT_TIME_ALS_PS, WAIT_TIME_ALS_PS);
+		else
+			usleep_range(WAIT_TIME_PS, WAIT_TIME_PS);
 
 		// Need to check for first far only. First close is reported via interrupt
 		stk3328_check_first_far_event(ps_data);
@@ -1103,11 +1128,23 @@ static int32_t stk3328_enable_als(struct stk3328_data *ps_data, uint8_t enable)
 	ret = stk3328_get_state(ps_data);
 	if (ret < 0)
 		return ret;
-	w_state_reg = (uint8_t)(ret & (~(STK_STATE_EN_ALS_MASK | STK_STATE_EN_WAIT_MASK)));
+	w_state_reg = (uint8_t)(ret & (~STK_STATE_EN_ALS_MASK));
 	if (enable)
+	{
 		w_state_reg |= STK_STATE_EN_ALS_MASK;
+		if (ps_data->ps_enabled)
+		{
+			ret = stk3328_i2c_smbus_write_byte_data(ps_data->client, STK_WAIT_REG, 0);
+			if (ret < 0)
+				return ret;
+		}
+	}
 	else if (ps_data->ps_enabled)
-		w_state_reg |= STK_STATE_EN_WAIT_MASK;
+	{
+		ret = stk3328_i2c_smbus_write_byte_data(ps_data->client, STK_WAIT_REG, ps_data->wait_reg);
+		if (ret < 0)
+			return ret;
+	}
 	ret = stk3328_set_state(ps_data, w_state_reg);
 	if (ret < 0)
 		return ret;
@@ -2014,7 +2051,11 @@ static void proximity_get_avg_val(struct stk3328_data *ps_data)
 	uint32_t read_value;
 
 	for (i = 0; i < PROX_READ_NUM; i++) {
-		msleep(40);
+		if (ps_data->als_enabled)
+			usleep_range(WAIT_TIME_ALS_PS, WAIT_TIME_ALS_PS);
+		else
+			usleep_range(WAIT_TIME_PS, WAIT_TIME_PS);
+
 		read_value = stk3328_get_ps_reading(ps_data);
 		avg += read_value;
 
@@ -2031,7 +2072,7 @@ static void proximity_get_avg_val(struct stk3328_data *ps_data)
 	ps_data->avg[0] = min;
 	ps_data->avg[1] = avg;
 	ps_data->avg[2] = max;
-	
+
 	pr_info("[SENSOR] %s, min = %d, avg = %d, max = %d", __func__, ps_data->avg[0], ps_data->avg[1], ps_data->avg[2]);
 }
 

@@ -33,7 +33,11 @@ struct msm_eeprom_ctrl_t;
 /* Module ID : 0x00A8~0x00B7(16Byte) for FROM, EEPROM (Don't support OTP)*/
 #define FROM_REAR_MODULE_ID_ADDR           0x00AE
 #define FROM_REAR2_MODULE_ID_ADDR           0x00AE
+#if defined(CONFIG_SEC_A6PLTE_PROJECT) || defined(CONFIG_SEC_J8Y18LTE_PROJECT)
+#define FROM_FRONT_MODULE_ID_ADDR           0x00AE
+#else
 #define FROM_FRONT_MODULE_ID_ADDR           0x0056
+#endif
 #define FROM_MODULE_ID_SIZE           16
 #endif
 

@@ -2874,7 +2874,7 @@ int diag_dci_register_client(struct diag_dci_reg_tbl_t *reg_entry)
 
 	new_entry->buffers = kzalloc(new_entry->num_buffers *
 				     sizeof(struct diag_dci_buf_peripheral_t),
-				     GFP_KERNEL);
+					GFP_KERNEL);
 	if (!new_entry->buffers) {
 		pr_err("diag: Unable to allocate buffers for peripherals in %s\n",
 								__func__);
@@ -2898,7 +2898,7 @@ int diag_dci_register_client(struct diag_dci_reg_tbl_t *reg_entry)
 		if (!proc_buf->buf_primary)
 			goto fail_alloc;
 		proc_buf->buf_cmd = kzalloc(sizeof(struct diag_dci_buffer_t),
-					    GFP_KERNEL);
+					GFP_KERNEL);
 		if (!proc_buf->buf_cmd)
 			goto fail_alloc;
 		err = diag_dci_init_buffer(proc_buf->buf_primary,

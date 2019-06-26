@@ -229,6 +229,10 @@ static long etspi_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	struct spi_device *spi;
 	u32 tmp;
 	struct egis_ioc_transfer *ioc = NULL;
+#ifdef CONFIG_SENSORS_FINGERPRINT_32BITS_PLATFORM_ONLY
+		struct egis_ioc_transfer_32 *ioc_32 = NULL;
+		u64 tx_buffer_64, rx_buffer_64;
+#endif
 	u8 *buf, *address, *result, *fr;
 	/* Check type and command number */
 	if (_IOC_TYPE(cmd) != EGIS_IOC_MAGIC) {
@@ -274,7 +278,43 @@ static long etspi_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		retval = -ENOTTY;
 		goto out;
 	}
-
+#ifdef CONFIG_SENSORS_FINGERPRINT_32BITS_PLATFORM_ONLY
+		tmp = _IOC_SIZE(cmd);
+		if ((tmp == 0) || (tmp % sizeof(struct egis_ioc_transfer_32)) != 0) {
+			pr_err("%s ioc_32 size error\n", __func__);
+			retval = -EINVAL;
+			goto out;
+		}
+		ioc_32 = kmalloc(tmp, GFP_KERNEL);
+		if (ioc_32 == NULL) {
+			retval = -ENOMEM;
+			pr_err("%s ioc_32 kmalloc error\n", __func__);
+			goto out;
+		}
+		if (__copy_from_user(ioc_32, (void __user *)arg, tmp)) {
+			retval = -EFAULT;
+			pr_err("%s ioc_32 copy_from_user error\n", __func__);
+			goto out;
+		}
+		ioc = kmalloc(sizeof(struct egis_ioc_transfer), GFP_KERNEL);
+		if (ioc == NULL) {
+			retval = -ENOMEM;
+			pr_err("%s ioc kmalloc error\n", __func__);
+			goto out;
+		}
+		tx_buffer_64 = (u64)ioc_32->tx_buf;
+		rx_buffer_64 = (u64)ioc_32->rx_buf;
+		ioc->tx_buf = (u8 *)tx_buffer_64;
+		ioc->rx_buf = (u8 *)rx_buffer_64;
+		ioc->len = ioc_32->len;
+		ioc->speed_hz = ioc_32->speed_hz;
+		ioc->delay_usecs = ioc_32->delay_usecs;
+		ioc->bits_per_word = ioc_32->bits_per_word;
+		ioc->cs_change = ioc_32->cs_change;
+		ioc->opcode = ioc_32->opcode;
+		memcpy(ioc->pad, ioc_32->pad, 3);
+		kfree(ioc_32);
+#else
 	tmp = _IOC_SIZE(cmd);
 	if ((tmp == 0) || (tmp % sizeof(struct egis_ioc_transfer)) != 0) {
 		pr_err("%s ioc size error\n", __func__);
@@ -292,6 +332,7 @@ static long etspi_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		retval = -EFAULT;
 		goto out;
 	}
+#endif
 
 	switch (ioc->opcode) {
 	/*
@@ -923,6 +964,7 @@ static int etspi_type_check(struct etspi_data *etspi)
 	 * ET510D : 0x03 / 0x0A / 0x05
 	 * ET516B : 0x01 or 0x02 / 0x10 / 0x05
 	 * ET520  : 0x03 / 0x14 / 0x05
+	 * ET520E  : 0x04 / 0x14 / 0x05
 	 * ET523  : 0x00 / 0x17 / 0x05
 	 */
 	if (((buf1 == 0x01) || (buf1 == 0x02))
@@ -935,6 +977,9 @@ static int etspi_type_check(struct etspi_data *etspi)
 	} else if ((buf1 == 0x03) && (buf2 == 0x14) && (buf3 == 0x05)) {
 		etspi->sensortype = SENSOR_EGIS;
 		pr_info("%s sensor type is EGIS ET520 sensor\n", __func__);
+	} else if ((buf1 == 0x04) && (buf2 == 0x14) && (buf3 == 0x05)) {
+		etspi->sensortype = SENSOR_EGIS;
+		pr_info("%s sensor type is EGIS ET520E sensor\n", __func__);
 	} else if((buf1 == 0x00) && (buf2 == 0x17) && (buf3 == 0x05)) {
 		etspi->sensortype = SENSOR_EGIS;
 		pr_info("%s sensor type is EGIS ET523 sensor\n", __func__);

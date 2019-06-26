@@ -2087,6 +2087,37 @@ end:
 	return;
 }
 
+
+#if defined(CONFIG_SEC_INCELL)
+void incell_blank_unblank(void *drv_data)
+{
+	struct samsung_display_driver_data *vdd = samsung_get_vdd();
+	struct mdss_panel_info *pinfo;
+
+	if (IS_ERR_OR_NULL(vdd))
+		return;
+
+	pinfo = vdd->mfd_dsi[DISPLAY_1]->panel_info;
+
+	if (IS_ERR_OR_NULL(pinfo))
+		return;
+
+	LCD_INFO("++\n");
+
+	mutex_lock(&vdd->vdd_blank_unblank_lock);
+
+	if (vdd->vdd_blank_mode[DISPLAY_1] == FB_BLANK_UNBLANK) {
+		/* schedule_work(&pstatus_data->check_status.work); */
+		mdss_fb_report_panel_dead(pstatus_data->mfd);
+	}
+
+	mutex_unlock(&vdd->vdd_blank_unblank_lock);
+
+	LCD_INFO("--\n");
+}
+#endif
+
+
 static void mdss_samsung_event_esd_recovery_init(struct mdss_panel_data *pdata, int event, void *arg)
 {
 	struct mdss_dsi_ctrl_pdata *ctrl = NULL;
@@ -2147,6 +2178,10 @@ static void mdss_samsung_event_esd_recovery_init(struct mdss_panel_data *pdata, 
 			*interval = interval_ms_for_irq;
 		}
 	}
+
+#if defined(CONFIG_SEC_INCELL)
+	incell_data.blank_unblank = incell_blank_unblank;
+#endif
 }
 
 
@@ -2679,6 +2714,9 @@ void mdss_samsung_panel_parse_dt_cmds(struct device_node *np,
 		parse_dt_data(np, &dtsi_data->acl_map_table[panel_rev],
 				"samsung,acl_map_table_rev", panel_rev,
 				mdss_samsung_parse_panel_table); /* ACL TABLE */
+
+		parse_dt_data(np, &dtsi_data->panel_tx_cmd_list[TX_ACL_PERCENT][panel_rev],
+				"samsung,acl_percent_tx_cmds_rev", panel_rev, NULL);
 
 		parse_dt_data(np, &dtsi_data->panel_tx_cmd_list[TX_ACL_ON][panel_rev],
 				"samsung,acl_on_tx_cmds_rev", panel_rev, NULL);
@@ -3381,6 +3419,9 @@ void mdss_samsung_panel_parse_dt(struct device_node *np,
 		}
 	}
 
+	vdd->dtsi_data[ctrl->ndx].ux_bit_support  = of_property_read_bool(np,
+		"samsung,ux-color-bit-support");
+
 	mdss_samsung_panel_parse_dt_cmds(np, ctrl);
 
 	/* Set HALL IC */
@@ -3654,6 +3695,46 @@ end:
 	return 0;
 }
 
+/*
+ * mdss_init_panel_reg_offset()
+ * This function find offset for reg value
+ * reg_list[X][0] is reg value
+ * reg_list[X][1] is offset for reg value
+ * cmd_list is the target cmds for searching reg value
+ */
+int mdss_init_panel_reg_offset(struct mdss_dsi_ctrl_pdata *ctrl,
+		int (*reg_list)[2],
+		struct dsi_panel_cmds *cmd_list[], int list_size)
+{
+	struct dsi_panel_cmds *lpm_cmds = NULL;
+	int i = 0, j = 0, max_cmd_cnt;
+
+	if (IS_ERR_OR_NULL(ctrl))
+		goto end;
+
+	if (IS_ERR_OR_NULL(reg_list) || IS_ERR_OR_NULL(cmd_list))
+		goto end;
+
+	for (i = 0; i < list_size; i++) {
+		lpm_cmds = cmd_list[i];
+		max_cmd_cnt = lpm_cmds->cmd_cnt;
+
+		for (j = 0; j < max_cmd_cnt; j++) {
+			if (lpm_cmds->cmds[j].payload &&
+					lpm_cmds->cmds[j].payload[0] == reg_list[i][0]) {
+				reg_list[i][1] = j;
+				break;
+			}
+		}
+	}
+
+end:
+	for (i = 0; i < list_size; i++)
+		LCD_DEBUG("offset[%d] : %d\n", i, reg_list[i][1]);
+	return 0;
+}
+
+
 void mdss_samsung_panel_lpm_hz_ctrl(struct mdss_panel_data *pdata, int aod_ctrl)
 {
 	struct mdss_dsi_ctrl_pdata *ctrl = NULL;
@@ -3809,6 +3890,14 @@ void mdss_samsung_panel_lpm_ctrl(struct mdss_panel_data *pdata, int enable)
 			vdd->display_status_dsi[ndx].wait_disp_on = true;
 			vdd->display_status_dsi[ndx].wait_actual_disp_on = true;
 			LCD_DEBUG("[Panel LPM] Set wait_disp_on to true\n");
+		}
+		/*
+			Update mdnie to disable mdnie operation by scenario at AOD display status.
+		*/
+		if (vdd->support_mdnie_lite) {
+			update_dsi_tcon_mdnie_register(vdd);
+			if(vdd->support_mdnie_trans_dimming)
+				vdd->mdnie_disable_trans_dimming = false;
 		}
 	} else { /* AOD OFF(Exit) */
 		/* Turn Off ALPM Mode */

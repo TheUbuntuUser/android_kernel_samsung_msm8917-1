@@ -538,11 +538,11 @@ static void __init mm_init(void)
 	 */
 	page_cgroup_init_flatmem();
 	mem_init();
+	set_memsize_kernel_type(MEMSIZE_KERNEL_STOP);
 	kmem_cache_init();
 	percpu_init_late();
 	pgtable_init();
 	vmalloc_init();
-	set_memsize_kernel_type(MEMSIZE_KERNEL_OTHERS);
 }
 
 asmlinkage __visible void __init start_kernel(void)
@@ -729,7 +729,6 @@ asmlinkage __visible void __init start_kernel(void)
 
 	ftrace_init();
 
-	set_memsize_kernel_type(MEMSIZE_KERNEL_STOP);
 	/* Do the rest non-__init'ed, we're now alive */
 	rest_init();
 }

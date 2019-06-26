@@ -285,7 +285,7 @@
 		qcom,mdss-dsi-mdp-trigger = "none";
 		qcom,mdss-dsi-dma-trigger = "trigger_sw";
 		qcom,mdss-dsi-panel-framerate = <60>;
-		/*qcom,mdss-dsi-panel-clockrate = <509000000>;*/
+/*		qcom,mdss-dsi-panel-clockrate = <509000000>;*/
 		qcom,mdss-dsi-on-command-state = "dsi_lp_mode";
 		qcom,mdss-dsi-off-command-state = "dsi_hs_mode";
 		qcom,mdss-pan-physical-width-dimension = <66>;
@@ -388,7 +388,7 @@
 		samsung,candela_map_table_revA = <
 		/*<idx>	  <from>  <till> <scaled_level> */
 			0		0		0		0
-			1		1		1		0
+			1		1		1		20
 			2		2		2		20
 			3		3		3		28
 			4		4		4		36

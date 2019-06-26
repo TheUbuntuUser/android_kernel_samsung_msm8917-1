@@ -1387,10 +1387,8 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
 			mm->def_flags | VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC;
 
 	if (flags & MAP_LOCKED)
-		if (!can_do_mlock()) {
-			pr_err("coremm: %s,%d: addr %lx len %lx prot %lx flag %lx\n", __func__, __LINE__, addr, len, prot, flags);
+		if (!can_do_mlock())
 			return -EPERM;
-		}
 
 	if (mlock_future_check(mm, vm_flags, len))
 		return -EAGAIN;
@@ -1428,10 +1426,8 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
 			if (!(file->f_mode & FMODE_READ))
 				return -EACCES;
 			if (file->f_path.mnt->mnt_flags & MNT_NOEXEC) {
-				if (vm_flags & VM_EXEC) {
-					pr_err("coremm: %s,%d: addr %lx len %lx prot %lx flag %lx\n", __func__, __LINE__, addr, len, prot, flags);
+				if (vm_flags & VM_EXEC)
 					return -EPERM;
-				}
 				vm_flags &= ~VM_MAYEXEC;
 			}
 
@@ -1485,9 +1481,6 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
 	    ((vm_flags & VM_LOCKED) ||
 	     (flags & (MAP_POPULATE | MAP_NONBLOCK)) == MAP_POPULATE))
 		*populate = len;
-	if (IS_ERR_VALUE(addr)) {
-		pr_err("coremm: %s,%d: addr %lx len %lx prot %lx flag %lx\n", __func__, __LINE__, addr, len, prot, flags);
-	}
 	return addr;
 }
 
@@ -1538,9 +1531,6 @@ out_fput:
 	if (file)
 		fput(file);
 out:
-	if (IS_ERR_VALUE(retval)) {
-		pr_err("coremm: %s,%d: addr %lx len %lx prot %lx flag %lx\n", __func__, __LINE__, addr, len, prot, flags);
-	}
 	return retval;
 }
 
@@ -2154,10 +2144,8 @@ get_unmapped_area(struct file *file, unsigned long addr, unsigned long len,
 	if (file && file->f_op->get_unmapped_area)
 		get_area = file->f_op->get_unmapped_area;
 	addr = get_area(file, addr, len, pgoff, flags);
-	if (IS_ERR_VALUE(addr)) {
-		pr_err("coremm: %s,%d: addr %lx len %lx flags %lx error %lx\n", __func__, __LINE__, addr, len, flags, error);
+	if (IS_ERR_VALUE(addr))
 		return addr;
-	}
 
 	if (addr > TASK_SIZE - len)
 		return -ENOMEM;
@@ -2166,9 +2154,6 @@ get_unmapped_area(struct file *file, unsigned long addr, unsigned long len,
 
 	addr = arch_rebalance_pgtables(addr, len);
 	error = security_mmap_addr(addr);
-	if (error) {
-		pr_err("coremm: %s,%d: addr %lx len %lx flags %lx error %lx\n", __func__, __LINE__, addr, len, flags, error);
-	}
 	return error ? error : addr;
 }
 

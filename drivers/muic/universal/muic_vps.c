@@ -840,7 +840,7 @@ static int resolve_dedicated_dev(muic_data_t *pmuic, muic_attached_dev_t *pdev, 
  * When UPSM mode, It should not VBUS_FET reset.
  */
 #if defined(CONFIG_MUIC_UNIVERSAL_SM5703)
-			is_UPSM = is_blocked(o_notify, NOTIFY_BLOCK_TYPE_ALL);
+			is_UPSM = is_blocked(o_notify, NOTIFY_BLOCK_TYPE_ALL) || is_blocked(o_notify, NOTIFY_BLOCK_TYPE_HOST);
 			if (muic_get_current_legacy_dev(pmuic) == ATTACHED_DEV_OTG_MUIC) {
 				pr_info("%s : OTG DETECTED (%d)\n", __func__, is_UPSM);
 				if (!is_UPSM) {

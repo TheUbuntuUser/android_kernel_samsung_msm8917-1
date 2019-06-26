@@ -258,6 +258,12 @@ config S5K5E3YX
 	---help---
 		Samsung 5 MP Bayer Sensor. It uses 2 mipi lanes,
 
+config S5K3P8
+	bool "Sensor s5k3p8 (BAYER 16MP)"
+	depends on MSMB_CAMERA
+	---help---
+		Samsung 16 MP Bayer Sensor. It uses 4 mipi lanes,
+
 config S5K3L2XX
 	bool "Sensor s5k3l2xx (BAYER 5MP)"
 	depends on MSMB_CAMERA
@@ -349,6 +355,13 @@ config GET_FRONT_MODULE_ID
         depends on MSMB_CAMERA
         ---help---
           Enable support to get module ID 10byte from eeprom 0x56 then 
+          set to sys_class_camera_front_moduleid
+
+config GET_FRONT_MODULE_ID_OTP
+        tristate "Front Camera Module ID from OTP"
+        depends on MSMB_CAMERA
+        ---help---
+          Enable support to get module ID 10byte from OTP then 
           set to sys_class_camera_front_moduleid
 
 config GET_REAR_SENSOR_ID

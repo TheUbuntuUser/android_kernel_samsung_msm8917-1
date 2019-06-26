@@ -60,6 +60,9 @@ enum pon_restart_reason {
 	PON_RESTART_REASON_DMVERITY_ENFORCE	= 0x05,
 	PON_RESTART_REASON_KEYS_CLEAR		= 0x06,
 
+	PON_RESTART_REASON_FORCE_UPLOAD_ON	= 0x10,
+	PON_RESTART_REASON_FORCE_UPLOAD_OFF	= 0x11,
+
 	PON_RESTART_REASON_MBS_MEM_RESERVE_ON	= 0x12,
 	PON_RESTART_REASON_MBS_MEM_RESERVE_OFF	= 0x13,
 /* CONFIG_SEC_BSP */
@@ -102,6 +105,8 @@ enum pon_restart_reason {
 
 #ifdef CONFIG_SEC_PM
 int qpnp_pon_check_chg_det(void);
+int qpnp_control_s2_reset_onoff(int on);
+int qpnp_get_s2_reset_onoff(void);
 #endif
 
 #ifdef CONFIG_QPNP_POWER_ON

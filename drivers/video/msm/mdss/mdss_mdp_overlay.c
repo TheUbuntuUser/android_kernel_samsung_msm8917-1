@@ -1795,7 +1795,7 @@ end:
 
 int mdss_mode_switch(struct msm_fb_data_type *mfd, u32 mode)
 {
-	struct mdss_rect l_roi, r_roi;
+	struct mdss_rect l_roi  = {0}, r_roi = {0};
 	struct mdss_mdp_ctl *ctl = mfd_to_ctl(mfd);
 	struct mdss_overlay_private *mdp5_data = mfd_to_mdp5_data(mfd);
 	struct mdss_mdp_ctl *sctl;
@@ -6686,6 +6686,7 @@ int mdss_mdp_overlay_init(struct msm_fb_data_type *mfd)
 	mdp5_interface->configure_panel = mdss_mdp_update_panel_info;
 	mdp5_interface->input_event_handler = mdss_mdp_input_event_handler;
 	mdp5_interface->signal_retire_fence = mdss_mdp_signal_retire_fence;
+	mdp5_interface->is_twm_en = NULL;
 
 	if (mfd->panel_info->type == WRITEBACK_PANEL) {
 		mdp5_interface->atomic_validate =

@@ -5783,10 +5783,6 @@ static int validate_scan_freqs(struct nlattr *freqs)
 		if (nla_len(attr1) != sizeof(u32))
 			return 0;
 
-	nla_for_each_nested(attr1, freqs, tmp1)
-		if (nla_len(attr1) != sizeof(u32))
-			return 0;
-
 	nla_for_each_nested(attr1, freqs, tmp1) {
 		n_channels++;
 		/*
@@ -9877,6 +9873,7 @@ static int nl80211_update_ft_ies(struct sk_buff *skb, struct genl_info *info)
 		return -EOPNOTSUPP;
 
 	if (!info->attrs[NL80211_ATTR_MDID] ||
+	    !info->attrs[NL80211_ATTR_IE] ||
 	    !is_valid_ie_attr(info->attrs[NL80211_ATTR_IE]))
 		return -EINVAL;
 

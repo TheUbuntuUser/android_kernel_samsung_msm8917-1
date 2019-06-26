@@ -42,7 +42,7 @@
 static struct v4l2_file_operations msm_eeprom_v4l2_subdev_fops;
 #endif
 
-#if defined(CONFIG_GET_FRONT_MODULE_ID)
+#if defined(CONFIG_GET_FRONT_MODULE_ID_OTP)
 extern uint8_t front_module_id[S5K5E9_OTP_MODULE_ID_SIZE + 1];
 #endif
 #if defined(CONFIG_GET_FRONT_SENSOR_ID)
@@ -3383,7 +3383,7 @@ static int read_eeprom_memory(struct msm_eeprom_ctrl_t *e_ctrl,
 
 #ifdef CONFIG_S5K5E9YX
 	memptr = block->mapdata;
-#if defined(CONFIG_GET_FRONT_MODULE_ID)
+#if defined(CONFIG_GET_FRONT_MODULE_ID_OTP)
 	memcpy(front_module_id, memptr + S5K5E9_OTP_MODULE_ID_OFFSET, S5K5E9_OTP_MODULE_ID_SIZE);
 	front_module_id[S5K5E9_OTP_MODULE_ID_SIZE] = '\0';
 #endif

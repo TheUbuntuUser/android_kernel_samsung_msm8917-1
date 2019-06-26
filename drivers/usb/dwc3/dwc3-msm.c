@@ -1842,10 +1842,8 @@ static void dwc3_msm_notify_event(struct dwc3 *dwc, unsigned event,
 		dwc3_msm_write_reg(mdwc->base, DWC3_GCTL, reg);
 		dwc->err_evt_seen = false;
 
-#ifndef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
 		/* restart USB which performs full reset and reconnect */
 		schedule_work(&mdwc->restart_usb_work);
-#endif
 		break;
 	case DWC3_CONTROLLER_RESET_EVENT:
 		dev_dbg(mdwc->dev, "DWC3_CONTROLLER_RESET_EVENT received\n");
@@ -2184,6 +2182,12 @@ static int dwc3_msm_suspend(struct dwc3_msm *mdwc)
 		pr_err("%s(): Trying to go in LPM with state:%d\n",
 					__func__, dwc->gadget.state);
 		pr_err("%s(): LPM is not performed.\n", __func__);
+		return -EBUSY;
+	}
+
+	if (!mdwc->in_host_mode && (mdwc->vbus_active && !mdwc->suspend)) {
+		dev_dbg(mdwc->dev,
+			"Received wakeup event before the core suspend\n");
 		return -EBUSY;
 	}
 

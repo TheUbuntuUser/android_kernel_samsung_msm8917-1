@@ -71,10 +71,19 @@ Copyright (C) 2012, Samsung Electronics. All rights reserved.
 
 #include <linux/sec_debug.h>
 
+#if defined(CONFIG_SEC_INCELL)
+#include <linux/sec_incell.h>
+#endif
+
 #define LCD_DEBUG(X, ...) pr_debug("[MDSS] %s : "X, __func__, ## __VA_ARGS__)
 #define LCD_INFO(X, ...) pr_info("[MDSS] %s : "X, __func__, ## __VA_ARGS__)
 #define LCD_INFO_ONCE(X, ...) pr_info_once("[MDSS] %s : "X, __func__, ## __VA_ARGS__)
 #define LCD_ERR(X, ...) pr_err("[MDSS] %s : "X, __func__, ## __VA_ARGS__)
+
+#define GFX_DEBUG(X, ...) pr_debug("[KGSL] %s : "X, __func__, ## __VA_ARGS__)
+#define GFX_INFO(X, ...) pr_info("[KGSL] %s : "X, __func__, ## __VA_ARGS__)
+#define GFX_INFO_ONCE(X, ...) pr_info_once("[KGSL] %s : "X, __func__, ## __VA_ARGS__)
+#define GFX_ERR(X, ...) pr_err("[KGSL] %s : "X, __func__, ## __VA_ARGS__)
 
 #define MAX_PANEL_NAME_SIZE 100
 
@@ -192,6 +201,7 @@ enum mipi_samsung_tx_cmd_list {
 	TX_HBM_OFF,
 	TX_AID,
 	TX_AID_SUBDIVISION,
+	TX_ACL_PERCENT,
 	TX_ACL_ON,
 	TX_ACL_OFF,
 	TX_ELVSS,
@@ -512,6 +522,9 @@ struct samsung_display_dtsi_data {
 	/* Backlight IC discharge delay */
 	int blic_discharging_delay_tft;
 	int cabc_delay;
+
+	/* UX color bit support */
+	int ux_bit_support;
 };
 
 struct samsung_mdnie_tune_data {
@@ -1019,6 +1032,8 @@ struct samsung_display_driver_data {
 
 #ifdef CONFIG_DISPLAY_USE_INFO
 	struct notifier_block dpui_notif;
+	struct notifier_block dpci_notif;
+	u64 dsi_errors; /* report dpci bigdata */
 #endif
 
 	/* COPR */
@@ -1149,6 +1164,10 @@ void mdss_samsung_copr_calc_delayed_work(struct delayed_work *work);
 /* PANEL LPM FUNCTION */
 int mdss_init_panel_lpm_reg_offset(struct mdss_dsi_ctrl_pdata *ctrl, int (*reg_list)[2],
 					struct dsi_panel_cmds *cmd_list[], int list_size);
+int mdss_init_panel_reg_offset(struct mdss_dsi_ctrl_pdata *ctrl,
+		int (*reg_list)[2],
+		struct dsi_panel_cmds *cmd_list[], int list_size);
+
 void mdss_samsung_panel_lpm_ctrl(struct mdss_panel_data *pdata, int enable);
 void mdss_samsung_panel_lpm_hz_ctrl(struct mdss_panel_data *pdata, int aod_ctrl);
 

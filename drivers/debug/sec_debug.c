@@ -136,7 +136,8 @@ static unsigned pmc8974_rev;
 static unsigned pm8941_rev;
 static unsigned pm8841_rev;
 #endif
-unsigned int sec_dbg_level;
+static unsigned int sec_dbg_level;
+static int force_upload;
 
 uint runtime_debug_val;
 module_param_named(enable, enable, uint,
@@ -831,6 +832,7 @@ static int dbg_set_cpu_affinity(const char *val, struct kernel_param *kp)
 	return 0;
 }
 
+#if 0
 /* for sec debug level */
 static int __init sec_debug_level(char *str)
 {
@@ -838,6 +840,7 @@ static int __init sec_debug_level(char *str)
 	return 0;
 }
 early_param("level", sec_debug_level);
+#endif
 
 static void sec_debug_set_qc_dload_magic(int on)
 {
@@ -909,52 +912,123 @@ static inline void __sec_debug_set_restart_reason(enum sec_restart_reason_t __r)
 	__raw_writel((u32)__r, qcom_restart_reason);
 }
 
+static enum pon_restart_reason __pon_restart_pory_start(
+				unsigned long opt_code)
+{
+	return (PON_RESTART_REASON_RORY_START | opt_code);
+}
+
+static enum pon_restart_reason __pon_restart_set_debug_level(
+				unsigned long opt_code)
+{
+	switch (opt_code) {
+	case ANDROID_DEBUG_LEVEL_LOW:
+		return PON_RESTART_REASON_DBG_LOW;
+	case ANDROID_DEBUG_LEVEL_MID:
+		return PON_RESTART_REASON_DBG_MID;
+	case ANDROID_DEBUG_LEVEL_HIGH:
+		return PON_RESTART_REASON_DBG_HIGH;
+	}
+
+	return PON_RESTART_REASON_UNKNOWN;
+}
+
+static enum pon_restart_reason __pon_restart_set_cpdebug(
+				unsigned long opt_code)
+{
+	if (opt_code == ANDROID_CP_DEBUG_ON)
+		return PON_RESTART_REASON_CP_DBG_ON;
+	else if (opt_code == ANDROID_CP_DEBUG_OFF)
+		return PON_RESTART_REASON_CP_DBG_OFF;
+
+	return PON_RESTART_REASON_UNKNOWN;
+}
+
+static enum pon_restart_reason __pon_restart_force_upload(
+				unsigned long opt_code)
+{
+	return (opt_code) ?
+		PON_RESTART_REASON_FORCE_UPLOAD_ON :
+		PON_RESTART_REASON_FORCE_UPLOAD_OFF;
+}
+
+#ifdef CONFIG_MUIC_SUPPORT_RUSTPROOF
+static enum pon_restart_reason __pon_restart_swsel(
+				unsigned long opt_code)
+{
+	unsigned long value =
+		 (((opt_code & 0x8) >> 1) | opt_code) & 0x7;
+
+	return (PON_RESTART_REASON_SWITCHSEL | value);
+}
+#endif
+															
+
 void sec_debug_update_restart_reason(const char *cmd, const int in_panic)
 {
 	struct __magic {
 		const char *cmd;
 		enum pon_restart_reason pon_rr;
 		enum sec_restart_reason_t sec_rr;
+		enum pon_restart_reason (*func)(unsigned long opt_code);
 	} magic[] = {
 		{ "sec_debug_hw_reset",
 			PON_RESTART_REASON_NOT_HANDLE,
-			RESTART_REASON_SEC_DEBUG_MODE, },
+			RESTART_REASON_SEC_DEBUG_MODE, NULL },
 		{ "userrequested",
 			PON_RESTART_REASON_NORMALBOOT,
-			RESTART_REASON_NOT_HANDLE, },
+			RESTART_REASON_NOT_HANDLE, NULL },
 		{ "GlobalActions restart",
 			PON_RESTART_REASON_NORMALBOOT,
-			RESTART_REASON_NOT_HANDLE, },
+			RESTART_REASON_NOT_HANDLE, NULL},
 		{ "download",
 			PON_RESTART_REASON_DOWNLOAD,
-			RESTART_REASON_NOT_HANDLE, },
+			RESTART_REASON_NOT_HANDLE, NULL },
 		{ "nvbackup",
 			PON_RESTART_REASON_NVBACKUP,
-			RESTART_REASON_NOT_HANDLE, },
+			RESTART_REASON_NOT_HANDLE, NULL },
 		{ "nvrestore",
 			PON_RESTART_REASON_NVRESTORE,
-			RESTART_REASON_NOT_HANDLE, },
+			RESTART_REASON_NOT_HANDLE, NULL },
 		{ "nverase",
 			PON_RESTART_REASON_NVERASE,
-			RESTART_REASON_NOT_HANDLE, },
+			RESTART_REASON_NOT_HANDLE, NULL },
 		{ "nvrecovery",
 			PON_RESTART_REASON_NVRECOVERY,
-			RESTART_REASON_NOT_HANDLE, },
+			RESTART_REASON_NOT_HANDLE, NULL },
 		{ "cpmem_on",
 			PON_RESTART_REASON_CP_MEM_RESERVE_ON,
-			RESTART_REASON_NOT_HANDLE, },
+			RESTART_REASON_NOT_HANDLE, NULL },
 		{ "cpmem_off",
 			PON_RESTART_REASON_CP_MEM_RESERVE_OFF,
-			RESTART_REASON_NOT_HANDLE, },
+			RESTART_REASON_NOT_HANDLE, NULL },
 		{ "mbsmem_on",
 			PON_RESTART_REASON_MBS_MEM_RESERVE_ON,
-			RESTART_REASON_NOT_HANDLE, },
+			RESTART_REASON_NOT_HANDLE, NULL },
 		{ "mbsmem_off",
 			PON_RESTART_REASON_MBS_MEM_RESERVE_OFF,
-			RESTART_REASON_NOT_HANDLE, },
+			RESTART_REASON_NOT_HANDLE, NULL },
+				{ "oem-",
+			PON_RESTART_REASON_UNKNOWN,
+			RESTART_REASON_NORMAL, NULL },
+		{ "sud",
+			PON_RESTART_REASON_UNKNOWN,
+			RESTART_REASON_NORMAL, __pon_restart_pory_start },
+		{ "debug",
+			PON_RESTART_REASON_UNKNOWN,
+			RESTART_REASON_NORMAL, __pon_restart_set_debug_level },
+		{ "cpdebug",
+			PON_RESTART_REASON_UNKNOWN,
+			RESTART_REASON_NORMAL, __pon_restart_set_cpdebug },
+		{ "forceupload",
+			PON_RESTART_REASON_UNKNOWN,
+			RESTART_REASON_NORMAL, __pon_restart_force_upload },
+#ifdef CONFIG_MUIC_SUPPORT_RUSTPROOF
+		{ "swsel",
+			PON_RESTART_REASON_UNKNOWN,
+			RESTART_REASON_NORMAL, __pon_restart_swsel },
+#endif
 	};
-	unsigned long opt_code;
-	unsigned long value;
 	enum pon_restart_reason pon_rr = (!in_panic) ?
 				PON_RESTART_REASON_NORMALBOOT :
 				PON_RESTART_REASON_KERNEL_PANIC;
@@ -964,52 +1038,7 @@ void sec_debug_update_restart_reason(const char *cmd, const int in_panic)
 
 	if (!cmd || !strlen(cmd))
 		goto __done;
-
-	if (!strncmp(cmd, "oem-", strlen("oem-"))) {
-		pon_rr = PON_RESTART_REASON_UNKNOWN;
-		goto __done;
-	} else if (!strncmp(cmd, "sud", 3) && !kstrtoul(cmd + 3, 0, &value)) {
-		pon_rr = (PON_RESTART_REASON_RORY_START | value) ;
-		goto __done;
-	} else if (!strncmp(cmd, "debug", strlen("debug")) &&
-		   !kstrtoul(cmd + strlen("debug"), 0, &opt_code)) {
-		switch (opt_code) {
-		case 0x4f4c:
-			pon_rr = PON_RESTART_REASON_DBG_LOW;
-			break;
-		case 0x494d:
-			pon_rr = PON_RESTART_REASON_DBG_MID;
-			break;
-		case 0x4948:
-			pon_rr = PON_RESTART_REASON_DBG_HIGH;
-			break;
-		default:
-			pon_rr = PON_RESTART_REASON_UNKNOWN;
-		}
-		goto __done;
-	} else if (!strncmp(cmd, "cpdebug", strlen("cpdebug")) &&
-		   !kstrtoul(cmd + strlen("cpdebug"), 0, &opt_code)) {
-		switch (opt_code) {
-		case 0x5500:
-			pon_rr = PON_RESTART_REASON_CP_DBG_ON;
-			break;
-		case 0x55ff:
-			pon_rr = PON_RESTART_REASON_CP_DBG_OFF;
-			break;
-		default:
-			pon_rr = PON_RESTART_REASON_UNKNOWN;
-		}
-		goto __done;
-	}
-#ifdef CONFIG_MUIC_SUPPORT_RUSTPROOF
-	else if (!strncmp(cmd, "swsel", 5) /* set switch value */
-			&& !kstrtoul(cmd + 5, 0, &opt_code)) {
-		opt_code = (((opt_code & 0x8) >> 1) | opt_code) & 0x7;
-		pon_rr = (PON_RESTART_REASON_SWITCHSEL | opt_code);
-		goto __done;
-	}
-#endif
-
+	
 	for (i = 0; i < ARRAY_SIZE(magic); i++) {
 		size_t len = strlen(magic[i].cmd);
 
@@ -1019,6 +1048,13 @@ void sec_debug_update_restart_reason(const char *cmd, const int in_panic)
 		pon_rr = magic[i].pon_rr;
 		sec_rr = magic[i].sec_rr;
 
+		if (magic[i].func != NULL) {
+			unsigned long opt_code;
+
+			if (!kstrtoul(cmd + len, 0, &opt_code))
+				pon_rr = magic[i].func(opt_code);
+		}
+		
 		goto __done;
 	}
 
@@ -1583,7 +1619,7 @@ static int __init sec_debug_init_crash_key(void)
 
 	return 0;
 }
-fs_initcall_sync(sec_debug_init_crash_key);
+arch_initcall_sync(sec_debug_init_crash_key);
 
 static struct notifier_block nb_reboot_block = {
 	.notifier_call = sec_debug_normal_reboot_handler,
@@ -1750,6 +1786,21 @@ static int __init ap_serial_setup(char *str)
 }
 __setup("androidboot.ap_serial=", ap_serial_setup);
 
+static int __init force_upload_setup(char *en)
+{
+	get_option(&en, &force_upload);
+	return 1;
+}
+__setup("androidboot.force_upload=", force_upload_setup);
+
+/* for sec debug level */
+static int __init sec_debug_level_setup(char *str)
+{
+	get_option(&str, &sec_dbg_level);
+	return 1;
+}
+__setup("androidboot.debug_level=", sec_debug_level_setup);
+
 extern struct kset *devices_kset;
 
 struct bus_type chip_id_subsys = {
@@ -1860,10 +1911,17 @@ int __init sec_debug_init(void)
 	sec_debug_set_upload_cause(UPLOAD_CAUSE_INIT);
 
         create_ap_serial_node();
-	if (unlikely(!sec_debug_is_enabled())) {
-		sec_do_bypass_sdi_execution_in_low();
-		return -EPERM;
+
+	switch (sec_dbg_level) {
+	case ANDROID_DEBUG_LEVEL_LOW:
+#ifdef CONFIG_SEC_FACTORY
+	case ANDROID_DEBUG_LEVEL_MID:
+#endif
+		if (!force_upload)
+			sec_do_bypass_sdi_execution_in_low();
+		break;
 	}
+
 #ifdef CONFIG_SEC_DEBUG_CANCERIZER
 	atomic_set(&cmctx.nr_test, 0);
 	atomic_set(&cmctx.nr_running, 0);
@@ -1881,10 +1939,24 @@ int __init sec_debug_init(void)
 	return 0;
 }
 
-int sec_debug_is_enabled(void)
+bool sec_debug_is_enabled(void)
 {
-	return enable;
+	switch (sec_dbg_level) {
+	case ANDROID_DEBUG_LEVEL_LOW:
+#ifdef CONFIG_SEC_FACTORY
+	case ANDROID_DEBUG_LEVEL_MID:
+#endif
+		return !!(force_upload);
+	}
+
+	return !!(enable);
 }
+
+unsigned int sec_debug_level(void)
+{
+	return sec_dbg_level;
+}										
+EXPORT_SYMBOL(sec_debug_level);
 
 #ifdef CONFIG_SEC_SSR_DEBUG_LEVEL_CHK
 int sec_debug_is_enabled_for_ssr(void)
@@ -2174,7 +2246,7 @@ __setup("sec_dbg=", sec_dbg_setup);
 
 static void sec_user_fault_dump(void)
 {
-	if (enable == 1 && enable_user == 1)
+	if (sec_debug_is_enabled() && enable_user)
 		panic("User Fault");
 }
 

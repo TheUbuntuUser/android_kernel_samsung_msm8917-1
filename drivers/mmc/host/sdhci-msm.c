@@ -4720,6 +4720,9 @@ static int sdhci_msm_probe(struct platform_device *pdev)
 	msm_host->mmc->caps2 |= MMC_CAP2_SLEEP_AWAKE;
 	msm_host->mmc->caps2 |= MMC_CAP2_DETECT_ON_ERR;
 	msm_host->mmc->pm_caps |= MMC_PM_KEEP_POWER | MMC_PM_WAKE_SDIO_IRQ;
+#if defined(CONFIG_SEC_HYBRID_TRAY)
+	msm_host->mmc->caps2 |= MMC_CAP2_NO_PRESCAN_POWERUP;
+#endif
 
 	if (msm_host->pdata->nonremovable) {
 		msm_host->mmc->caps |= MMC_CAP_NONREMOVABLE;
@@ -5159,6 +5162,7 @@ static int sdhci_msm_suspend(struct device *dev)
 	struct sdhci_host *host = dev_get_drvdata(dev);
 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
 	struct sdhci_msm_host *msm_host = pltfm_host->priv;
+	struct mmc_host *mmc = host->mmc;
 	int ret = 0;
 	int sdio_cfg = 0;
 	ktime_t start = ktime_get();
@@ -5174,6 +5178,8 @@ static int sdhci_msm_suspend(struct device *dev)
 	}
 	ret = sdhci_msm_runtime_suspend(dev);
 out:
+	/* cancel any clock gating work scheduled by mmc_host_clk_release() */
+	cancel_delayed_work_sync(&mmc->clk_gate_work);
 	sdhci_msm_disable_controller_clock(host);
 	if (host->mmc->card && mmc_card_sdio(host->mmc->card)) {
 		sdio_cfg = sdhci_msm_cfg_sdio_wakeup(host, true);
