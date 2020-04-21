@@ -10529,6 +10529,7 @@
 					fsmgr_flags = "wait";
 					status = "ok";
 				};
+<<<<<<< HEAD
 
 				system {
 					compatible = "android,system";
@@ -10538,6 +10539,8 @@
 					fsmgr_flags = "wait";
 					status = "ok";
 				};
+=======
+>>>>>>> fbc57e44afa7... Revert "ARM: dts: 8917: remove partition mounts"
 			};
 		};
 	};
