@@ -295,3 +295,17 @@ config MACH_J4PRIMELTE_KOR_OPEN
 	bool "Samsung J4PRIMELTE KOR OPEN"
 	help
 	Support for Samsung J4PRIMELTE KOR OPEN device.
+
+config SEC_J2Y18LTE_PROJECT
+	depends on ARCH_MSM8937
+	default n
+	bool "Samsung J2Y18LTE Project"
+	help
+	Support for Samsung J2Y18LTE Project
+
+config MACH_J2Y18LTE_MEA_OPEN
+	depends on SEC_J2Y18LTE_PROJECT
+	default n
+	bool "Samsung J2Y18LTE MEA OPEN"
+	help
+	Support for Samsung J2Y18LTE MEA OPEN device.
