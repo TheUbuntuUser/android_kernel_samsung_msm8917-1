@@ -6,7 +6,7 @@
 #
 # General setup
 #
-CONFIG_LOCALVERSION="PsychicGirl"
+CONFIG_LOCALVERSION="-phizero-geckyn-TheUbuntuUser"
 CONFIG_AUDIT=y
 
 #
