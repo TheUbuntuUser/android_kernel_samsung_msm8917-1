@@ -1646,7 +1646,6 @@ long qcedev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 	case QCEDEV_IOCTL_SHA_INIT_REQ:
 		{
 		struct scatterlist sg_src;
-
 		if (copy_from_user(&qcedev_areq->sha_op_req,
 					(void __user *)arg,
 					sizeof(struct qcedev_sha_op_req)))
@@ -1675,12 +1674,7 @@ long qcedev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 	case QCEDEV_IOCTL_SHA_UPDATE_REQ:
 		{
 		struct scatterlist sg_src;
-<<<<<<< HEAD
-		if (copy_from_user(&qcedev_areq.sha_op_req,
-=======
-
 		if (copy_from_user(&qcedev_areq->sha_op_req,
->>>>>>> 791f49ffb12c... crypto: msm: update QTI crypto drivers for msm-4.14
 					(void __user *)arg,
 					sizeof(struct qcedev_sha_op_req)))
 			return -EFAULT;
@@ -1766,12 +1760,7 @@ long qcedev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 	case QCEDEV_IOCTL_GET_SHA_REQ:
 		{
 		struct scatterlist sg_src;
-<<<<<<< HEAD
-		if (copy_from_user(&qcedev_areq.sha_op_req,
-=======
-
 		if (copy_from_user(&qcedev_areq->sha_op_req,
->>>>>>> 791f49ffb12c... crypto: msm: update QTI crypto drivers for msm-4.14
 					(void __user *)arg,
 					sizeof(struct qcedev_sha_op_req)))
 			return -EFAULT;
