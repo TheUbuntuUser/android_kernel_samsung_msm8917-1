@@ -1,12 +1,12 @@
 #!/bin/bash
 
 
-export ARCH=arm
-export PATH=$(pwd)/../PLATFORM/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9/bin:$PATH
+export ARCH=arm64
+export PATH=/home/hyoon/phizero/gcc/gcc-arm-8.3-2019.03-x86_64-aarch64-linux-gnu/bin:$PATH
 
 mkdir out
 
-make -C $(pwd) O=out CROSS_COMPILE=arm-linux-androideabi- j4primelte_sea_open_defconfig
-make -j64 -C $(pwd) O=out CROSS_COMPILE=arm-linux-androideabi-
+make -C $(pwd) O=out CROSS_COMPILE=aarch64-linux-gnu- j2y18lte_defconfig
+make -j64 -C $(pwd) O=out CROSS_COMPILE=aarch64-linux-gnu- -j16
  
-cp out/arch/arm/boot/zImage $(pwd)/arch/arm/boot/zImage
+cp out/arch/arm/boot/Image $(pwd)/arch/arm/boot/Image.gz
